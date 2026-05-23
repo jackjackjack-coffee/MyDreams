@@ -1,0 +1,45 @@
+# dependencies
+node_modules/
+
+# build
+dist/
+dist-ssr/
+*.local
+
+# env (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# session debug artifacts (Playwright snapshots, local screenshots)
+.playwright-mcp/
+skybox-shared.png
+
+# tsc incremental build artifacts
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
+
+# local tooling settings (Claude, etc.)
+.claude/
