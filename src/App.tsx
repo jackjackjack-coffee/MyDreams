@@ -5,6 +5,7 @@ import { Physics } from '@react-three/rapier';
 import { World } from './world/World';
 import { Player } from './world/Player';
 import { Settings } from './ui/Settings';
+import { Postprocess } from './world/effects/Postprocess';
 
 const KEYS = [
   { name: 'forward', keys: ['ArrowUp', 'KeyW'] },
@@ -36,12 +37,13 @@ export default function App() {
         <Canvas
           shadows
           camera={{ position: [0, 1.7, 6], fov: 70 }}
-          gl={{ antialias: true }}
+          gl={{ antialias: false }}
         >
           <Physics gravity={[0, -20, 0]}>
             <World />
             <Player />
           </Physics>
+          <Postprocess />
           <PointerLockControls
             pointerSpeed={sensitivity}
             onLock={() => setLocked(true)}
