@@ -5,9 +5,9 @@ import { scatter } from './scatter';
 
 const COUNT = 36;
 
-// Tall stems with bioluminescent bloom-orbs that release cyan motes.
-// Visually distinct from dream markers (those come in step 5 with brighter,
-// pulsing orbs and color-coded glow).
+// Tall stems with bioluminescent bloom-orbs. One shared Sparkles instance covers
+// all flowers (per-flower particle systems and point lights were the biggest
+// frame-rate cost on machines without a GPU).
 export function WishingFlowers() {
   const points = useMemo(() => scatter({ count: COUNT, seed: 11, innerR: 8, outerR: 60 }), []);
 
@@ -42,19 +42,21 @@ export function WishingFlowers() {
           <group key={i} position={[p.x, p.y, p.z]} rotation={[0, p.rot, 0]} scale={p.scale}>
             <mesh geometry={stemGeom} material={stemMat} position={[0, stemH / 2, 0]} scale={[1, stemH, 1]} />
             <mesh geometry={bloomGeom} material={bloomMat} position={[0, stemH, 0]} />
-            <pointLight color="#6dd5d8" intensity={0.4} distance={3} decay={2} position={[0, stemH, 0]} />
-            <Sparkles
-              count={6}
-              scale={[0.6, 1.2, 0.6]}
-              position={[0, stemH + 0.4, 0]}
-              size={2}
-              speed={0.4}
-              color="#6dd5d8"
-              opacity={0.8}
-            />
           </group>
         );
       })}
+
+      {/* Shared particle layer covering the whole flower field */}
+      <Sparkles
+        count={140}
+        scale={[120, 2, 120]}
+        position={[0, 1.2, 0]}
+        size={2.5}
+        speed={0.35}
+        color="#6dd5d8"
+        opacity={0.8}
+        noise={1.5}
+      />
     </group>
   );
 }

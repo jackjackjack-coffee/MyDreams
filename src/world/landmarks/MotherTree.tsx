@@ -13,14 +13,18 @@ export function MotherTree({ position = [-35, 0, -55] as [number, number, number
     [],
   );
 
-  const canopyMaterial = useMemo(
+  // One material per opacity level — far cheaper than cloning per-mesh every render.
+  const canopyMaterials = useMemo(
     () =>
-      new THREE.MeshBasicMaterial({
-        color: '#4b5d7e',
-        transparent: true,
-        opacity: 0.6,
-        depthWrite: false,
-      }),
+      [0, 1, 2, 3, 4].map(
+        (i) =>
+          new THREE.MeshBasicMaterial({
+            color: '#4b5d7e',
+            transparent: true,
+            opacity: 0.55 - i * 0.09,
+            depthWrite: false,
+          }),
+      ),
     [],
   );
 
@@ -37,18 +41,12 @@ export function MotherTree({ position = [-35, 0, -55] as [number, number, number
       </mesh>
 
       {/* Canopy: stacked soft blobs fading upward into the clouds. */}
-      {[0, 1, 2, 3, 4].map((i) => {
+      {canopyMaterials.map((mat, i) => {
         const y = TRUNK_HEIGHT + i * 11;
         const r = 26 - i * 2;
-        const opacity = 0.55 - i * 0.09;
         return (
-          <mesh key={i} position={[0, y, 0]}>
+          <mesh key={i} position={[0, y, 0]} material={mat}>
             <sphereGeometry args={[r, 20, 16]} />
-            <primitive
-              object={canopyMaterial.clone()}
-              attach="material"
-              opacity={opacity}
-            />
           </mesh>
         );
       })}

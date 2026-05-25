@@ -7,6 +7,7 @@ import {
   type RapierRigidBody,
 } from '@react-three/rapier';
 import * as THREE from 'three';
+import { setPlayerPos } from '../dreams/playerPos';
 
 const SPEED = 5;
 const JUMP_VELOCITY = 5;
@@ -53,6 +54,7 @@ export function Player() {
 
     const pos = body.current.translation();
     camera.position.set(pos.x, pos.y + PLAYER_EYE_HEIGHT, pos.z);
+    setPlayerPos(pos.x, pos.y, pos.z);
   });
 
   return (

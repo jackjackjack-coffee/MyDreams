@@ -8,8 +8,14 @@ import { Mushrooms } from './flora/Mushrooms';
 import { StandingStones } from './flora/StandingStones';
 import { CrystalClusters } from './flora/CrystalClusters';
 import { GroundSparkle } from './flora/GroundSparkle';
+import { Dreams } from '../dreams/Dreams';
+import type { Dream } from '../dreams/types';
 
-export function World() {
+type Props = {
+  onSelectDream: (dream: Dream) => void;
+};
+
+export function World({ onSelectDream }: Props) {
   return (
     <>
       {/* Eternal-twilight atmosphere: deep blue-violet fog hides the world's edge. */}
@@ -46,6 +52,8 @@ export function World() {
       <StandingStones />
       <CrystalClusters />
       <GroundSparkle />
+
+      <Dreams onSelect={onSelectDream} />
     </>
   );
 }

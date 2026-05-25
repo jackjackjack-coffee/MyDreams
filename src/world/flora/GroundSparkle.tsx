@@ -6,7 +6,7 @@ export function GroundSparkle() {
   return (
     <>
       <Sparkles
-        count={400}
+        count={200}
         scale={[120, 1.2, 120]}
         position={[0, 0.4, 0]}
         size={2.5}
@@ -17,7 +17,7 @@ export function GroundSparkle() {
       />
       {/* A small handful of brighter, slower drifting motes for variety */}
       <Sparkles
-        count={80}
+        count={40}
         scale={[80, 3, 80]}
         position={[0, 1.5, 0]}
         size={3.5}
