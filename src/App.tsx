@@ -4,6 +4,7 @@ import { KeyboardControls, PointerLockControls } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { World } from './world/World';
 import { Player } from './world/Player';
+import { Postprocess } from './world/effects/Postprocess';
 import { Settings } from './ui/Settings';
 
 const KEYS = [
@@ -47,6 +48,7 @@ export default function App() {
             onLock={() => setLocked(true)}
             onUnlock={() => setLocked(false)}
           />
+          <Postprocess />
         </Canvas>
       </KeyboardControls>
 
