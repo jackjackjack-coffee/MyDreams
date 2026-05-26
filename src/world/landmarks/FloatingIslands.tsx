@@ -1,6 +1,7 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { makeToonGradient } from '../toonGradient';
 
 type IslandSpec = {
   position: [number, number, number];
@@ -17,6 +18,7 @@ const ISLANDS: IslandSpec[] = [
 function Island({ spec }: { spec: IslandSpec }) {
   const ref = useRef<THREE.Group>(null);
   const baseY = spec.position[1];
+  const gradientMap = useMemo(() => makeToonGradient(), []);
 
   useFrame(({ clock }) => {
     if (!ref.current) return;
@@ -28,12 +30,12 @@ function Island({ spec }: { spec: IslandSpec }) {
       {/* Top grass cap */}
       <mesh castShadow>
         <sphereGeometry args={[spec.radius, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#5e8a7a" roughness={1} flatShading />
+        <meshToonMaterial color="#5e8a7a" gradientMap={gradientMap} />
       </mesh>
       {/* Rocky underside — inverted cone-ish */}
       <mesh position={[0, -spec.radius * 0.4, 0]} castShadow>
         <coneGeometry args={[spec.radius * 0.95, spec.radius * 1.5, 8]} />
-        <meshStandardMaterial color="#3d4a66" roughness={1} flatShading />
+        <meshToonMaterial color="#3d4a66" gradientMap={gradientMap} />
       </mesh>
     </group>
   );

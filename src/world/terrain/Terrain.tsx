@@ -2,11 +2,13 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { RigidBody } from '@react-three/rapier';
 import { terrainHeight } from './heightmap';
+import { makeToonGradient } from '../toonGradient';
 
 const SIZE = 240;
 const SEGMENTS = 160;
 
 export function Terrain() {
+  const gradientMap = useMemo(() => makeToonGradient(), []);
   const geom = useMemo(() => {
     const g = new THREE.PlaneGeometry(SIZE, SIZE, SEGMENTS, SEGMENTS);
     g.rotateX(-Math.PI / 2);
@@ -39,12 +41,7 @@ export function Terrain() {
   return (
     <RigidBody type="fixed" colliders="trimesh" friction={0.9}>
       <mesh geometry={geom} receiveShadow>
-        <meshStandardMaterial
-          vertexColors
-          roughness={1}
-          metalness={0}
-          flatShading
-        />
+        <meshToonMaterial vertexColors gradientMap={gradientMap} />
       </mesh>
     </RigidBody>
   );
