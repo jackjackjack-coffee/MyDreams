@@ -42,6 +42,31 @@ create policy "authed users insert reports"
   on public.reports for insert
   with check (auth.uid() = reporter_id);
 
+-- Image/video support: URL of the uploaded media file (null for text dreams).
+alter table public.dreams add column if not exists media_url text;
+
 -- Realtime: stream new dreams to all connected clients so markers appear
 -- without a page refresh.
 alter publication supabase_realtime add table public.dreams;
+
+-- STORAGE: dream media bucket ------------------------------------------------
+-- Public bucket so anyone can view the images / videos.
+insert into storage.buckets (id, name, public)
+values ('dream-media', 'dream-media', true)
+on conflict (id) do nothing;
+
+drop policy if exists "anyone read dream media" on storage.objects;
+create policy "anyone read dream media"
+  on storage.objects for select
+  using (bucket_id = 'dream-media');
+
+-- Authenticated (including anon-auth) users can upload only into a folder
+-- named after their own user id. Prevents one visitor from writing into
+-- another visitor's space.
+drop policy if exists "authed users upload to own folder" on storage.objects;
+create policy "authed users upload to own folder"
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'dream-media'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

@@ -16,7 +16,9 @@ You only need to do this once. Takes about 10 minutes.
 2. Open `supabase/schema.sql` in this repo, copy the whole file, and paste it into the editor.
 3. Click **Run** (or press ⌘/Ctrl-Enter). You should see "Success. No rows returned."
 
-This creates the `dreams` and `reports` tables with the right security policies (anyone can read dreams; only signed-in users can write their own).
+This creates the `dreams` and `reports` tables with the right security policies (anyone can read dreams; only signed-in users can write their own), plus the `dream-media` storage bucket for image uploads.
+
+> **If you set up Supabase before image uploads existed,** just re-run the same `schema.sql` file. It's re-runnable and will only add the new column + bucket.
 
 ## 3. Turn on anonymous sign-in
 

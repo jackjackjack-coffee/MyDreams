@@ -55,24 +55,27 @@ Don't expect localhost to work when Claude is running on the web. Always check t
 1. ✅ Scaffold (Vite + R3F + Rapier + Supabase SDK + Tailwind)
 2. ✅ First 3D scene (sky, ground, placeholder cube)
 3. ✅ First-person walking (WASD + PointerLockControls + Rapier capsule)
-4. ✅ Decorate the world with landmarks (watercolor storybook aesthetic) — **targeted polish pass still pending; see backlog below**
+4. ✅ Decorate the world with landmarks (watercolor storybook aesthetic)
+4b. ✅ **Visual polish pass** — branching Mother Tree, dome mushroom caps, toon shading on terrain/trunk/islands/mushrooms/stones, drei `<Outlines>` for cel edges, fewer/larger standing stones
 5. ✅ Dream marker + click interaction (real marker, color-coded glow, R3F raycaster on `onClick`)
 6. ✅ Supabase setup — schema in `supabase/schema.sql`, walkthrough in `SETUP.md`
 7. ✅ Load dreams from DB (initial fetch + realtime inserts)
-8. ✅ Place-a-dream form — **text only** for now
-9. ⏳ Image uploads (needs a Supabase Storage bucket + size caps)
-10. ⏳ Video uploads
-11. 🟡 Dream popup viewer — text slice done; image/video viewers pending
-12. 🟡 Safety pass — text slice done (500-char cap server-side + UI counter, profanity filter via `bad-words`, Report button → `reports` table). Still pending: rate limit, file size caps, moderation queue.
-13. ⏳ Polish + deploy to Vercel — Vercel preview auto-deploys already working; polish pass deferred
+8. ✅ Place-a-dream form — text + image tabs working (image picker with drag-drop, preview, size cap)
+9. ✅ Image uploads — Supabase Storage `dream-media` bucket, 5 MB cap, per-user folder RLS, public-read
+10. ⏳ Video uploads (same pattern, bigger size cap, possibly thumbnail extraction)
+11. 🟡 Dream popup viewer — text + image working; video viewer pending
+12. 🟡 Safety pass — text + image: 500-char cap, profanity filter, Report button, 5 MB image cap. Still pending: rate limit, moderation queue.
+13. ⏳ Polish + deploy to Vercel — Vercel preview auto-deploys already working
 
-**Next-PR backlog (visual polish, "targeted upgrade"):**
-- drei `<Outlines>` on landmarks for cel-shaded edges
-- Branching Mother Tree trunk instead of single cylinder
-- Proper mushroom caps (hemisphere with stem inset, not stacked icosahedron)
-- Fewer + larger standing stones, hand-shaped
-- Toon-shaded materials on flora
-- Tighter foreground composition (reduce cluster counts)
+**Branch / PR state:**
+- Active branch: `claude/busy-gauss-JZ8U3`
+- Open draft PR: #2 — covers steps 4–9
+- **User must re-run `supabase/schema.sql`** in their Supabase SQL editor before image uploads will work (it's re-runnable; only adds the new column + storage bucket policies).
+
+**Next-PR backlog:**
+- Video uploads (step 10) — bucket already exists; needs UI + bigger size cap + maybe thumbnail
+- Rate limiting (Edge Function)
+- Moderation queue UI for reported dreams
 
 ---
 

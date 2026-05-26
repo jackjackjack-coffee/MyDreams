@@ -13,6 +13,12 @@ const SPEED = 5;
 const JUMP_VELOCITY = 5;
 const PLAYER_EYE_HEIGHT = 0.6;
 
+// Wider tolerance so terrain bumps don't keep the player from being "grounded"
+// while walking. Combined with a short post-jump cooldown to prevent double
+// jumps when the player's velocity passes through 0 at the apex.
+const GROUND_VY_TOL = 0.5;
+const JUMP_COOLDOWN = 0.3;
+
 const camDir = new THREE.Vector3();
 const sideDir = new THREE.Vector3();
 const movement = new THREE.Vector3();
@@ -20,10 +26,11 @@ const UP = new THREE.Vector3(0, 1, 0);
 
 export function Player() {
   const body = useRef<RapierRigidBody>(null);
+  const lastJumpAt = useRef(0);
   const [, get] = useKeyboardControls();
   const { camera } = useThree();
 
-  useFrame(() => {
+  useFrame(({ clock }) => {
     if (!body.current) return;
 
     const { forward, backward, left, right, jump } = get();
@@ -41,12 +48,15 @@ export function Player() {
     if (movement.lengthSq() > 0) movement.normalize().multiplyScalar(SPEED);
 
     const linvel = body.current.linvel();
-    const onGround = Math.abs(linvel.y) < 0.05;
+    const t = clock.elapsedTime;
+    const onGround = Math.abs(linvel.y) < GROUND_VY_TOL;
+    const wantsJump = jump && onGround && t - lastJumpAt.current > JUMP_COOLDOWN;
+    if (wantsJump) lastJumpAt.current = t;
 
     body.current.setLinvel(
       {
         x: movement.x,
-        y: jump && onGround ? JUMP_VELOCITY : linvel.y,
+        y: wantsJump ? JUMP_VELOCITY : linvel.y,
         z: movement.z,
       },
       true,

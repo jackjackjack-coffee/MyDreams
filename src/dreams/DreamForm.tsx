@@ -4,6 +4,8 @@ import { placeDream } from './store';
 import { getPlayerPos } from './playerPos';
 
 const MAX_LEN = 500;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 const filter = new Filter();
 
 type DreamKind = 'text' | 'image' | 'video';
@@ -22,42 +24,117 @@ const TABS: { kind: DreamKind; label: string; color: string }[] = [
 export function DreamForm({ open, onClose }: Props) {
   const [kind, setKind] = useState<DreamKind>('text');
   const [text, setText] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageCaption, setImageCaption] = useState('');
+  const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Reset when form opens
   useEffect(() => {
     if (open) {
       setKind('text');
       setText('');
+      setImageFile(null);
+      setImagePreview(null);
+      setImageCaption('');
       setError(null);
       setSubmitting(false);
       setTimeout(() => taRef.current?.focus(), 0);
     }
   }, [open]);
 
+  // Revoke object URL when imagePreview changes (avoid memory leak)
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
+
   if (!open) return null;
+
+  const stopGameKeys = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') onClose();
+    e.nativeEvent.stopPropagation();
+  };
+
+  const handleFile = (file: File | null) => {
+    setError(null);
+    if (!file) {
+      setImageFile(null);
+      setImagePreview(null);
+      return;
+    }
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      setError('Image must be PNG, JPG, WebP, or GIF.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setError(`Image must be under ${Math.round(MAX_IMAGE_BYTES / 1024 / 1024)} MB.`);
+      return;
+    }
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const trimmed = text.trim();
-    if (!trimmed) { setError('Write something first.'); return; }
-    if (trimmed.length > MAX_LEN) { setError(`Keep it under ${MAX_LEN} characters.`); return; }
-    if (filter.isProfane(trimmed)) { setError('Please keep dreams kind and safe for strangers.'); return; }
-
-    setSubmitting(true);
     const { x, z } = getPlayerPos();
-    const res = await placeDream({ kind: 'text', text: trimmed, x, z });
-    setSubmitting(false);
 
-    if (!res.ok) { setError(res.error); return; }
-    onClose();
+    if (kind === 'text') {
+      const trimmed = text.trim();
+      if (!trimmed) { setError('Write something first.'); return; }
+      if (trimmed.length > MAX_LEN) { setError(`Keep it under ${MAX_LEN} characters.`); return; }
+      if (filter.isProfane(trimmed)) { setError('Please keep dreams kind and safe for strangers.'); return; }
+
+      setSubmitting(true);
+      const res = await placeDream({ kind: 'text', text: trimmed, x, z });
+      setSubmitting(false);
+      if (!res.ok) { setError(res.error); return; }
+      onClose();
+      return;
+    }
+
+    if (kind === 'image') {
+      if (!imageFile) { setError('Pick an image to upload first.'); return; }
+      const trimmedCaption = imageCaption.trim();
+      if (trimmedCaption.length > MAX_LEN) {
+        setError(`Caption must be under ${MAX_LEN} characters.`); return;
+      }
+      if (trimmedCaption && filter.isProfane(trimmedCaption)) {
+        setError('Please keep captions kind and safe for strangers.'); return;
+      }
+
+      setSubmitting(true);
+      const res = await placeDream({
+        kind: 'image',
+        file: imageFile,
+        caption: trimmedCaption || undefined,
+        x, z,
+      });
+      setSubmitting(false);
+      if (!res.ok) { setError(res.error); return; }
+      onClose();
+    }
   };
 
+  const submitDisabled =
+    submitting ||
+    kind === 'video' ||
+    (kind === 'text' && text.trim().length === 0) ||
+    (kind === 'image' && !imageFile);
+
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      style={{ cursor: 'auto' }}
+    >
       <form
         onSubmit={handleSubmit}
         className="w-[28rem] max-w-[90vw] rounded-lg bg-black/80 p-5 text-white/90 ring-1 ring-white/10 backdrop-blur"
@@ -91,10 +168,7 @@ export function DreamForm({ open, onClose }: Props) {
               ref={taRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') onClose();
-                e.nativeEvent.stopPropagation();
-              }}
+              onKeyDown={stopGameKeys}
               maxLength={MAX_LEN}
               rows={5}
               placeholder="A small wish, a memory, a hope…"
@@ -107,11 +181,78 @@ export function DreamForm({ open, onClose }: Props) {
           </>
         )}
 
-        {(kind === 'image' || kind === 'video') && (
-          <div className="flex h-32 flex-col items-center justify-center rounded-md border border-dashed border-white/10 text-center text-sm text-white/30">
-            <span className="text-2xl mb-2">{kind === 'image' ? '🖼️' : '🎞️'}</span>
-            <span>{kind === 'image' ? 'Image' : 'Video'} uploads coming in a future update.</span>
-            <span className="mt-1 text-[11px]">For now, try leaving a text dream.</span>
+        {kind === 'image' && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ACCEPTED_IMAGE_TYPES.join(',')}
+              onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+              className="hidden"
+            />
+
+            {!imagePreview ? (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragEnter={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  handleFile(e.dataTransfer.files?.[0] ?? null);
+                }}
+                className={`flex h-40 flex-col items-center justify-center rounded-md border-2 border-dashed text-center text-sm transition-colors cursor-pointer ${
+                  dragOver
+                    ? 'border-cyan-300/60 bg-cyan-300/5 text-cyan-200'
+                    : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
+                }`}
+              >
+                <span className="text-2xl mb-1">🖼️</span>
+                <span className="font-medium">Click or drop an image here</span>
+                <span className="mt-1 text-[11px] text-white/30">
+                  PNG, JPG, WebP or GIF · up to 5 MB
+                </span>
+              </div>
+            ) : (
+              <div className="relative overflow-hidden rounded-md ring-1 ring-white/10">
+                <img
+                  src={imagePreview}
+                  alt="preview"
+                  className="block max-h-56 w-full object-contain bg-black/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => { handleFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                  className="absolute right-2 top-2 rounded-md bg-black/70 px-2 py-1 text-xs text-white/80 hover:bg-black/90"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+
+            <input
+              type="text"
+              value={imageCaption}
+              onChange={(e) => setImageCaption(e.target.value)}
+              onKeyDown={stopGameKeys}
+              maxLength={MAX_LEN}
+              placeholder="Add a caption (optional)…"
+              className="mt-3 w-full rounded-md bg-black/50 px-3 py-2 text-sm placeholder-white/30 outline-none ring-1 ring-white/10 focus:ring-cyan-300/40"
+            />
+
+            <div className="mt-1 flex items-center justify-between text-[11px] text-white/40">
+              <span>{error ? <span className="text-rose-300">{error}</span> : ' '}</span>
+              <span className="tabular-nums">{imageCaption.length} / {MAX_LEN}</span>
+            </div>
+          </>
+        )}
+
+        {kind === 'video' && (
+          <div className="flex h-40 flex-col items-center justify-center rounded-md border-2 border-dashed border-white/10 text-center text-sm text-white/30">
+            <span className="text-2xl mb-2">🎞️</span>
+            <span>Video uploads coming in a future update.</span>
+            <span className="mt-1 text-[11px]">For now, try text or images.</span>
           </div>
         )}
 
@@ -125,7 +266,7 @@ export function DreamForm({ open, onClose }: Props) {
           </button>
           <button
             type="submit"
-            disabled={submitting || kind !== 'text'}
+            disabled={submitDisabled}
             className="rounded-md bg-rose-300/80 px-4 py-1.5 text-sm font-medium text-black hover:bg-rose-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? 'Placing…' : 'Place dream'}

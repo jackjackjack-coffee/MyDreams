@@ -71,14 +71,15 @@ export async function startDreamSync() {
     .subscribe();
 }
 
+type PlaceDreamInput =
+  | { kind: 'text'; text: string; x: number; z: number }
+  | { kind: 'image'; file: File; caption?: string; x: number; z: number };
+
 // Optimistic insert — adds the new dream locally immediately, then writes to DB.
 // On failure, removes the optimistic row and surfaces the error.
-export async function placeDream(input: {
-  kind: 'text';
-  text: string;
-  x: number;
-  z: number;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function placeDream(
+  input: PlaceDreamInput,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!isSupabaseConfigured) {
     return { ok: false, error: 'Supabase not configured' };
   }
@@ -89,11 +90,41 @@ export async function placeDream(input: {
     return { ok: false, error: 'Not signed in' };
   }
 
+  // For images: upload to storage first, get the public URL.
+  let mediaUrl: string | null = null;
+  let textContent: string | null = null;
+
+  if (input.kind === 'text') {
+    textContent = input.text;
+  } else {
+    const ext = (input.file.name.split('.').pop() || 'jpg').toLowerCase();
+    const stamp = Date.now();
+    const rand = Math.random().toString(36).slice(2, 8);
+    const path = `${userId}/${stamp}-${rand}.${ext}`;
+
+    const { error: upErr } = await supabase.storage
+      .from('dream-media')
+      .upload(path, input.file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: input.file.type || 'image/jpeg',
+      });
+
+    if (upErr) {
+      return { ok: false, error: upErr.message };
+    }
+
+    const { data: urlData } = supabase.storage.from('dream-media').getPublicUrl(path);
+    mediaUrl = urlData.publicUrl;
+    textContent = input.caption?.trim() || null;
+  }
+
   const optimistic: Dream = {
     id: `optimistic-${Date.now()}`,
     created_at: new Date().toISOString(),
     kind: input.kind,
-    text: input.text,
+    text: textContent,
+    media_url: mediaUrl,
     x: input.x,
     y: 0,
     z: input.z,
@@ -105,7 +136,8 @@ export async function placeDream(input: {
     .from('dreams')
     .insert({
       kind: input.kind,
-      text: input.text,
+      text: textContent,
+      media_url: mediaUrl,
       x: input.x,
       y: 0,
       z: input.z,

@@ -60,8 +60,18 @@ export default function App() {
 
   const modalOpen = formOpen || selected !== null;
 
+  // Belt-and-braces: whenever a modal is open, make sure pointer lock is
+  // actually released so the cursor is visible. exitPointerLock() is a no-op
+  // if already unlocked, so this is safe.
+  useEffect(() => {
+    if (modalOpen) document.exitPointerLock();
+  }, [modalOpen]);
+
   return (
-    <div className="relative h-full w-full">
+    <div
+      className="relative h-full w-full"
+      style={{ cursor: modalOpen ? 'auto' : undefined }}
+    >
       <KeyboardControls map={KEYS}>
         <Canvas
           shadows

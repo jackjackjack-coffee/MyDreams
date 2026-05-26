@@ -5,6 +5,7 @@ export type Dream = {
   created_at: string;
   kind: DreamKind;
   text: string | null;
+  media_url: string | null;
   x: number;
   y: number;
   z: number;

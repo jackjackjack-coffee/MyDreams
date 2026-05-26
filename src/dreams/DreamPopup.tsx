@@ -34,15 +34,28 @@ export function DreamPopup({ dream, onClose }: Props) {
   };
 
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="w-[26rem] max-w-[90vw] rounded-lg bg-black/80 p-5 text-white/90 ring-1 ring-white/10 backdrop-blur">
+    <div
+      className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      style={{ cursor: 'auto' }}
+    >
+      <div className="w-[28rem] max-w-[90vw] rounded-lg bg-black/80 p-5 text-white/90 ring-1 ring-white/10 backdrop-blur">
         <div className="mb-3 text-[11px] uppercase tracking-widest text-white/40">
           A dream · {timeAgo(dream.created_at)}
         </div>
 
-        <p className="whitespace-pre-wrap text-base leading-relaxed text-white/90">
-          {dream.text}
-        </p>
+        {dream.kind === 'image' && dream.media_url && (
+          <img
+            src={dream.media_url}
+            alt="A stranger's image"
+            className="mb-3 block max-h-80 w-full rounded-md bg-black/40 object-contain ring-1 ring-white/5"
+          />
+        )}
+
+        {dream.text && (
+          <p className="whitespace-pre-wrap text-base leading-relaxed text-white/90">
+            {dream.text}
+          </p>
+        )}
 
         <div className="mt-5 flex items-center justify-between">
           <button
