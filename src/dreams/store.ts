@@ -73,7 +73,8 @@ export async function startDreamSync() {
 
 type PlaceDreamInput =
   | { kind: 'text'; text: string; x: number; z: number }
-  | { kind: 'image'; file: File; caption?: string; x: number; z: number };
+  | { kind: 'image'; file: File; caption?: string; x: number; z: number }
+  | { kind: 'video'; file: File; caption?: string; x: number; z: number };
 
 // Optimistic insert — adds the new dream locally immediately, then writes to DB.
 // On failure, removes the optimistic row and surfaces the error.

@@ -5,7 +5,9 @@ import { getPlayerPos } from './playerPos';
 
 const MAX_LEN = 500;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 const filter = new Filter();
 
 type DreamKind = 'text' | 'image' | 'video';
@@ -27,11 +29,15 @@ export function DreamForm({ open, onClose }: Props) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageCaption, setImageCaption] = useState('');
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [videoCaption, setVideoCaption] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   // Reset when form opens
   useEffect(() => {
@@ -41,18 +47,23 @@ export function DreamForm({ open, onClose }: Props) {
       setImageFile(null);
       setImagePreview(null);
       setImageCaption('');
+      setVideoFile(null);
+      setVideoPreview(null);
+      setVideoCaption('');
       setError(null);
       setSubmitting(false);
       setTimeout(() => taRef.current?.focus(), 0);
     }
   }, [open]);
 
-  // Revoke object URL when imagePreview changes (avoid memory leak)
+  // Revoke object URLs when previews change (avoid memory leak)
   useEffect(() => {
-    return () => {
-      if (imagePreview) URL.revokeObjectURL(imagePreview);
-    };
+    return () => { if (imagePreview) URL.revokeObjectURL(imagePreview); };
   }, [imagePreview]);
+
+  useEffect(() => {
+    return () => { if (videoPreview) URL.revokeObjectURL(videoPreview); };
+  }, [videoPreview]);
 
   if (!open) return null;
 
@@ -79,6 +90,26 @@ export function DreamForm({ open, onClose }: Props) {
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleVideoFile = (file: File | null) => {
+    setError(null);
+    if (!file) {
+      setVideoFile(null);
+      setVideoPreview(null);
+      return;
+    }
+    if (!ACCEPTED_VIDEO_TYPES.includes(file.type)) {
+      setError('Video must be MP4, WebM, or MOV.');
+      return;
+    }
+    if (file.size > MAX_VIDEO_BYTES) {
+      setError(`Video must be under ${Math.round(MAX_VIDEO_BYTES / 1024 / 1024)} MB.`);
+      return;
+    }
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
+    setVideoFile(file);
+    setVideoPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,14 +152,37 @@ export function DreamForm({ open, onClose }: Props) {
       setSubmitting(false);
       if (!res.ok) { setError(res.error); return; }
       onClose();
+      return;
+    }
+
+    if (kind === 'video') {
+      if (!videoFile) { setError('Pick a video to upload first.'); return; }
+      const trimmedCaption = videoCaption.trim();
+      if (trimmedCaption.length > MAX_LEN) {
+        setError(`Caption must be under ${MAX_LEN} characters.`); return;
+      }
+      if (trimmedCaption && filter.isProfane(trimmedCaption)) {
+        setError('Please keep captions kind and safe for strangers.'); return;
+      }
+
+      setSubmitting(true);
+      const res = await placeDream({
+        kind: 'video',
+        file: videoFile,
+        caption: trimmedCaption || undefined,
+        x, z,
+      });
+      setSubmitting(false);
+      if (!res.ok) { setError(res.error); return; }
+      onClose();
     }
   };
 
   const submitDisabled =
     submitting ||
-    kind === 'video' ||
     (kind === 'text' && text.trim().length === 0) ||
-    (kind === 'image' && !imageFile);
+    (kind === 'image' && !imageFile) ||
+    (kind === 'video' && !videoFile);
 
   return (
     <div
@@ -249,11 +303,74 @@ export function DreamForm({ open, onClose }: Props) {
         )}
 
         {kind === 'video' && (
-          <div className="flex h-40 flex-col items-center justify-center rounded-md border-2 border-dashed border-white/10 text-center text-sm text-white/30">
-            <span className="text-2xl mb-2">🎞️</span>
-            <span>Video uploads coming in a future update.</span>
-            <span className="mt-1 text-[11px]">For now, try text or images.</span>
-          </div>
+          <>
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept={ACCEPTED_VIDEO_TYPES.join(',')}
+              onChange={(e) => handleVideoFile(e.target.files?.[0] ?? null)}
+              className="hidden"
+            />
+
+            {!videoPreview ? (
+              <div
+                onClick={() => videoInputRef.current?.click()}
+                onDragEnter={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  handleVideoFile(e.dataTransfer.files?.[0] ?? null);
+                }}
+                className={`flex h-40 flex-col items-center justify-center rounded-md border-2 border-dashed text-center text-sm transition-colors cursor-pointer ${
+                  dragOver
+                    ? 'border-fuchsia-300/60 bg-fuchsia-300/5 text-fuchsia-200'
+                    : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
+                }`}
+              >
+                <span className="text-2xl mb-1">🎞️</span>
+                <span className="font-medium">Click or drop a video here</span>
+                <span className="mt-1 text-[11px] text-white/30">
+                  MP4, WebM or MOV · up to 50 MB
+                </span>
+              </div>
+            ) : (
+              <div className="relative overflow-hidden rounded-md ring-1 ring-white/10">
+                <video
+                  src={videoPreview}
+                  controls
+                  preload="metadata"
+                  className="block max-h-56 w-full bg-black/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleVideoFile(null);
+                    if (videoInputRef.current) videoInputRef.current.value = '';
+                  }}
+                  className="absolute right-2 top-2 rounded-md bg-black/70 px-2 py-1 text-xs text-white/80 hover:bg-black/90"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+
+            <input
+              type="text"
+              value={videoCaption}
+              onChange={(e) => setVideoCaption(e.target.value)}
+              onKeyDown={stopGameKeys}
+              maxLength={MAX_LEN}
+              placeholder="Add a caption (optional)…"
+              className="mt-3 w-full rounded-md bg-black/50 px-3 py-2 text-sm placeholder-white/30 outline-none ring-1 ring-white/10 focus:ring-fuchsia-300/40"
+            />
+
+            <div className="mt-1 flex items-center justify-between text-[11px] text-white/40">
+              <span>{error ? <span className="text-rose-300">{error}</span> : ' '}</span>
+              <span className="tabular-nums">{videoCaption.length} / {MAX_LEN}</span>
+            </div>
+          </>
         )}
 
         <div className="mt-4 flex justify-end gap-2">

@@ -62,20 +62,20 @@ Don't expect localhost to work when Claude is running on the web. Always check t
 7. ✅ Load dreams from DB (initial fetch + realtime inserts)
 8. ✅ Place-a-dream form — text + image tabs working (image picker with drag-drop, preview, size cap)
 9. ✅ Image uploads — Supabase Storage `dream-media` bucket, 5 MB cap, per-user folder RLS, public-read
-10. ⏳ Video uploads (same pattern, bigger size cap, possibly thumbnail extraction)
-11. 🟡 Dream popup viewer — text + image working; video viewer pending
+10. ✅ Video uploads — same `dream-media` bucket, 50 MB cap, MP4/WebM/MOV, picker + drag-drop, caption, popup player
+11. 🟡 Dream popup viewer — text + image + video all working; step is effectively done
 12. 🟡 Safety pass — text + image: 500-char cap, profanity filter, Report button, 5 MB image cap. Still pending: rate limit, moderation queue.
 13. ⏳ Polish + deploy to Vercel — Vercel preview auto-deploys already working
 
 **Branch / PR state:**
-- Active branch: `claude/busy-gauss-JZ8U3`
-- Open draft PR: #2 — covers steps 4–9
-- **User must re-run `supabase/schema.sql`** in their Supabase SQL editor before image uploads will work (it's re-runnable; only adds the new column + storage bucket policies).
+- Active branch: `claude/fervent-meitner-AJEqQ`
+- Open draft PR: #3 — covers step 10 (video uploads), built on top of PR #2 (steps 4–9)
+- **User must re-run `supabase/schema.sql`** in their Supabase SQL editor if not already done — re-runnable, adds `media_url` column + storage bucket + policies, no data loss.
 
 **Next-PR backlog:**
-- Video uploads (step 10) — bucket already exists; needs UI + bigger size cap + maybe thumbnail
-- Rate limiting (Edge Function)
-- Moderation queue UI for reported dreams
+- Rate limiting (Edge Function) — step 12 remaining work
+- Moderation queue UI for reported dreams — step 12 remaining work
+- Polish + deploy to Vercel — step 13
 
 ---
 

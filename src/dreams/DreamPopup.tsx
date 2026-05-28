@@ -51,6 +51,15 @@ export function DreamPopup({ dream, onClose }: Props) {
           />
         )}
 
+        {dream.kind === 'video' && dream.media_url && (
+          <video
+            src={dream.media_url}
+            controls
+            preload="metadata"
+            className="mb-3 block max-h-80 w-full rounded-md bg-black/40 ring-1 ring-white/5"
+          />
+        )}
+
         {dream.text && (
           <p className="whitespace-pre-wrap text-base leading-relaxed text-white/90">
             {dream.text}
