@@ -36,6 +36,18 @@ The plan file with full reasoning is at `~/.claude/plans/i-want-to-create-flicke
 
 All deps already installed (`npm install` is done). Dev server: `npm run dev` → http://localhost:5173
 
+### Working on the web vs. locally
+
+This project supports two modes:
+
+- **Local on your laptop:** `npm run dev`, open http://localhost:5173. Fast iteration, full HMR.
+- **Claude Code on the web:** the dev server runs inside a cloud container — `http://localhost:5173` from there is *not* reachable from your laptop. To verify changes:
+  1. Let Claude push the branch to GitHub.
+  2. Vercel auto-deploys a preview URL for the PR.
+  3. Open the preview URL in your browser.
+
+Don't expect localhost to work when Claude is running on the web. Always check the dev server log to confirm it actually came up — if it's there, the preview build will be fine too.
+
 ---
 
 ## Build order — where we are
@@ -43,18 +55,27 @@ All deps already installed (`npm install` is done). Dev server: `npm run dev` �
 1. ✅ Scaffold (Vite + R3F + Rapier + Supabase SDK + Tailwind)
 2. ✅ First 3D scene (sky, ground, placeholder cube)
 3. ✅ First-person walking (WASD + PointerLockControls + Rapier capsule)
-4. 🟢 **NEXT — Decorate the world with landmarks (watercolor storybook aesthetic)**
-5. ⏳ Hardcoded dream marker + click interaction
-6. ⏳ Supabase setup (DB + storage + RLS)
-7. ⏳ Load dreams from DB
-8. ⏳ Place-a-dream form (text first)
-9. ⏳ Image uploads
-10. ⏳ Video uploads
-11. ⏳ Dream popup viewer
-12. ⏳ **Safety pass** (report button, rate limit, profanity filter, file size caps) — **non-negotiable before any public link**
-13. ⏳ Polish + deploy to Vercel
+4. ✅ Decorate the world with landmarks (watercolor storybook aesthetic)
+4b. ✅ **Visual polish pass** — branching Mother Tree, dome mushroom caps, toon shading on terrain/trunk/islands/mushrooms/stones, drei `<Outlines>` for cel edges, fewer/larger standing stones
+5. ✅ Dream marker + click interaction (real marker, color-coded glow, R3F raycaster on `onClick`)
+6. ✅ Supabase setup — schema in `supabase/schema.sql`, walkthrough in `SETUP.md`
+7. ✅ Load dreams from DB (initial fetch + realtime inserts)
+8. ✅ Place-a-dream form — text + image tabs working (image picker with drag-drop, preview, size cap)
+9. ✅ Image uploads — Supabase Storage `dream-media` bucket, 5 MB cap, per-user folder RLS, public-read
+10. ✅ Video uploads — same `dream-media` bucket, 50 MB cap, MP4/WebM/MOV, picker + drag-drop, caption, popup player
+11. 🟡 Dream popup viewer — text + image + video all working; step is effectively done
+12. 🟡 Safety pass — text + image: 500-char cap, profanity filter, Report button, 5 MB image cap. Still pending: rate limit, moderation queue.
+13. ⏳ Polish + deploy to Vercel — Vercel preview auto-deploys already working
 
-Task tracker has all 13 steps; step 4 is unblocked and ready.
+**Branch / PR state:**
+- Active branch: `claude/fervent-meitner-AJEqQ`
+- Open draft PR: #3 — covers step 10 (video uploads), built on top of PR #2 (steps 4–9)
+- **User must re-run `supabase/schema.sql`** in their Supabase SQL editor if not already done — re-runnable, adds `media_url` column + storage bucket + policies, no data loss.
+
+**Next-PR backlog:**
+- Rate limiting (Edge Function) — step 12 remaining work
+- Moderation queue UI for reported dreams — step 12 remaining work
+- Polish + deploy to Vercel — step 13
 
 ---
 
