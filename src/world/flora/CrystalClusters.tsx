@@ -12,12 +12,15 @@ export function CrystalClusters() {
   const crystalGeom = useMemo(() => new THREE.ConeGeometry(0.18, 1.1, 5), []);
   const crystalMat = useMemo(
     () =>
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshPhysicalMaterial({
         color: '#e8a8d0',
         emissive: '#c860a0',
-        emissiveIntensity: 0.7,
-        roughness: 0.25,
-        metalness: 0.2,
+        emissiveIntensity: 0.5,
+        roughness: 0.04,
+        metalness: 0.05,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.04,
+        envMapIntensity: 2.2,
         flatShading: true,
       }),
     [],

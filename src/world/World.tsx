@@ -1,5 +1,7 @@
+import { Environment } from '@react-three/drei';
 import { Sky } from './sky/Sky';
 import { Terrain } from './terrain/Terrain';
+import { Lake } from './terrain/Lake';
 import { MotherTree } from './landmarks/MotherTree';
 import { FloatingIslands } from './landmarks/FloatingIslands';
 import { FarLight } from './landmarks/FarLight';
@@ -39,9 +41,17 @@ export function World({ onSelectDream }: Props) {
         shadow-bias={-0.0005}
       />
 
+      {/*
+        Image-based lighting from a sunset HDR — adds soft reflections and
+        richer ambient colour to Standard/Physical materials (crystals, water,
+        flower stems). background=false keeps our custom sky dome.
+      */}
+      <Environment preset="sunset" background={false} />
+
       <Sky />
 
       <Terrain />
+      <Lake />
 
       <MotherTree />
       <FloatingIslands />
