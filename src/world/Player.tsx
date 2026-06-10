@@ -8,6 +8,7 @@ import {
 } from '@react-three/rapier';
 import * as THREE from 'three';
 import { setPlayerPos } from '../dreams/playerPos';
+import { consumeTeleport } from './teleport';
 
 const SPEED = 5;
 const JUMP_VELOCITY = 5;
@@ -32,6 +33,12 @@ export function Player() {
 
   useFrame(({ clock }) => {
     if (!body.current) return;
+
+    const tp = consumeTeleport();
+    if (tp) {
+      body.current.setTranslation(tp, true);
+      body.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    }
 
     const { forward, backward, left, right, jump } = get();
 
