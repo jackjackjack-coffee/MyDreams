@@ -71,6 +71,16 @@ export async function startDreamSync() {
     .subscribe();
 }
 
+// The database enforces a per-visitor hourly limit via row-level security, so
+// over-limit inserts come back as an RLS violation. Translate that into
+// something a human can act on.
+function friendlyError(message: string): string {
+  if (/row-level security|violates.*policy/i.test(message)) {
+    return 'The garden needs to rest — you can leave up to 5 dreams an hour. Come back in a little while.';
+  }
+  return message;
+}
+
 type PlaceDreamInput =
   | { kind: 'text'; text: string; x: number; z: number }
   | { kind: 'image'; file: File; caption?: string; x: number; z: number }
@@ -112,7 +122,7 @@ export async function placeDream(
       });
 
     if (upErr) {
-      return { ok: false, error: upErr.message };
+      return { ok: false, error: friendlyError(upErr.message) };
     }
 
     const { data: urlData } = supabase.storage.from('dream-media').getPublicUrl(path);
@@ -149,7 +159,7 @@ export async function placeDream(
 
   if (error || !data) {
     setState({ dreams: state.dreams.filter((d) => d.id !== optimistic.id) });
-    return { ok: false, error: error?.message ?? 'Insert failed' };
+    return { ok: false, error: friendlyError(error?.message ?? 'Insert failed') };
   }
 
   // Replace optimistic with real row.

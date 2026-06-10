@@ -63,18 +63,19 @@ Don't expect localhost to work when Claude is running on the web. Always check t
 8. ✅ Place-a-dream form — text + image tabs working (image picker with drag-drop, preview, size cap)
 9. ✅ Image uploads — Supabase Storage `dream-media` bucket, 5 MB cap, per-user folder RLS, public-read
 10. ✅ Video uploads — same `dream-media` bucket, 50 MB cap, MP4/WebM/MOV, picker + drag-drop, caption, popup player
-11. 🟡 Dream popup viewer — text + image + video all working; step is effectively done
-12. 🟡 Safety pass — text + image: 500-char cap, profanity filter, Report button, 5 MB image cap. Still pending: rate limit, moderation queue.
+11. ✅ Dream popup viewer — text + image + video, Copy-link button, per-dream remount (`key`) fix
+12. ✅ Safety pass — 500-char cap, profanity filter, Report button, size caps, **DB-level rate limits** (5 dreams/hr + 5 uploads/hr per user, enforced in RLS — no Edge Function needed), one-report-per-user-per-dream, **auto-hide at 3 reports** via trigger, `moderation_queue` view reviewed from the Supabase dashboard (SETUP.md §9)
 13. ⏳ Polish + deploy to Vercel — Vercel preview auto-deploys already working
 
+**Also in place:** shareable deep links (`?dream=<id>` teleports to + opens that dream), "Drift to a random dream" button + dream count on the start overlay, `supabase/seed.sql` with 20 starter dreams (SETUP.md §8).
+
 **Branch / PR state:**
-- Active branch: `claude/fervent-meitner-AJEqQ`
-- Open draft PR: #3 — covers step 10 (video uploads), built on top of PR #2 (steps 4–9)
-- **User must re-run `supabase/schema.sql`** in their Supabase SQL editor if not already done — re-runnable, adds `media_url` column + storage bucket + policies, no data loss.
+- Active branch: `claude/blissful-goldberg-rde60z` (steps 4–12 + HDRI/lake polish)
+- **User must re-run `supabase/schema.sql`** in their Supabase SQL editor — re-runnable, adds `hidden` column, rate-limit functions/policies, auto-hide trigger, moderation view; no data loss. Then optionally run `supabase/seed.sql` once.
 
 **Next-PR backlog:**
-- Rate limiting (Edge Function) — step 12 remaining work
-- Moderation queue UI for reported dreams — step 12 remaining work
+- Ambient audio (procedural WebAudio, no asset files — keeps the "no AI assets" rule)
+- Performance pass on a weak machine
 - Polish + deploy to Vercel — step 13
 
 ---

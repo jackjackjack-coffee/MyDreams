@@ -10,6 +10,9 @@ export type Dream = {
   y: number;
   z: number;
   author_id: string;
+  // Optional so the app keeps working against a database that predates the
+  // safety pass (re-run supabase/schema.sql to add the column).
+  hidden?: boolean;
 };
 
 // Color-coded glow per CLAUDE.md spec.
