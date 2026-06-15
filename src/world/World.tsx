@@ -8,6 +8,7 @@ import { Mushrooms } from './flora/Mushrooms';
 import { StandingStones } from './flora/StandingStones';
 import { CrystalClusters } from './flora/CrystalClusters';
 import { GroundSparkle } from './flora/GroundSparkle';
+import { FloatingFireflies } from './flora/FloatingFireflies';
 import { Dreams } from '../dreams/Dreams';
 import type { Dream } from '../dreams/types';
 
@@ -52,6 +53,7 @@ export function World({ onSelectDream }: Props) {
       <StandingStones />
       <CrystalClusters />
       <GroundSparkle />
+      <FloatingFireflies />
 
       <Dreams onSelect={onSelectDream} />
     </>

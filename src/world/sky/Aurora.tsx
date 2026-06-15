@@ -107,7 +107,7 @@ export function Aurora() {
         scale={[420, 110, 1]}
         colorA="#6dd5d8"
         colorB="#e8c279"
-        speed={1}
+        speed={1.6}
       />
       <Ribbon
         position={[-60, 160, -220]}
@@ -115,7 +115,7 @@ export function Aurora() {
         scale={[340, 80, 1]}
         colorA="#a8c5e0"
         colorB="#d8a0c4"
-        speed={0.6}
+        speed={1.0}
       />
       <Ribbon
         position={[80, 100, -280]}
@@ -123,7 +123,7 @@ export function Aurora() {
         scale={[280, 70, 1]}
         colorA="#6dd5d8"
         colorB="#a8c5e0"
-        speed={0.8}
+        speed={1.3}
       />
     </group>
   );
