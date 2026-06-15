@@ -45,6 +45,7 @@ export default function App() {
       if (formOpen || selected) return;
       e.preventDefault();
       document.exitPointerLock();
+      setLocked(false);
       setFormOpen(true);
     };
     window.addEventListener('keydown', onKey);
@@ -55,6 +56,7 @@ export default function App() {
   // releases pointer lock so the user can interact with the modal.
   const handleSelectDream = (d: Dream) => {
     document.exitPointerLock();
+    setLocked(false);
     setSelected(d);
   };
 
@@ -82,11 +84,21 @@ export default function App() {
             <World onSelectDream={handleSelectDream} />
             <Player />
           </Physics>
-          <PointerLockControls
-            pointerSpeed={sensitivity}
-            onLock={() => setLocked(true)}
-            onUnlock={() => setLocked(false)}
-          />
+          {/*
+            Only mount the look-controls when no modal is open. While the
+            dream form or popup is up, the controls are fully unmounted, so
+            there is no listener left to re-grab the pointer or keep rotating
+            the camera — the system cursor stays visible and the mouse is free
+            to click tabs, pick files, and place the text caret. Closing the
+            modal remounts the controls and the "Click to enter" prompt returns.
+          */}
+          {!modalOpen && (
+            <PointerLockControls
+              pointerSpeed={sensitivity}
+              onLock={() => setLocked(true)}
+              onUnlock={() => setLocked(false)}
+            />
+          )}
           <Postprocess />
         </Canvas>
       </KeyboardControls>
