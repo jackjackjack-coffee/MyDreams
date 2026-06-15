@@ -1,24 +1,24 @@
 import { EffectComposer, Bloom, Vignette, BrightnessContrast, HueSaturation } from '@react-three/postprocessing';
 import { BlendFunction, KernelSize } from 'postprocessing';
 
-// The dreamy-bloom + soft-contrast pass that makes everything glow and feel painted.
-// Watercolor-grade smoothing without a custom shader — bloom does most of the heavy lifting,
-// vignette + a touch of saturation finish the storybook feel.
 export function Postprocess() {
   return (
     <EffectComposer multisampling={0} enableNormalPass={false}>
+      {/* Lower threshold so terrain/mushrooms/stones all bleed into the glow pass, not just orbs. */}
       <Bloom
-        intensity={1.4}
-        luminanceThreshold={0.35}
-        luminanceSmoothing={0.85}
-        kernelSize={KernelSize.LARGE}
+        intensity={1.9}
+        luminanceThreshold={0.22}
+        luminanceSmoothing={0.88}
+        kernelSize={KernelSize.HUGE}
         mipmapBlur
       />
-      <HueSaturation saturation={0.08} />
-      <BrightnessContrast brightness={0.02} contrast={0.05} />
+      {/* Deeper saturation — makes the painted palette pop instead of reading as muted. */}
+      <HueSaturation saturation={0.24} />
+      {/* Slightly darker base so emissive objects contrast more. */}
+      <BrightnessContrast brightness={-0.03} contrast={0.14} />
       <Vignette
-        offset={0.2}
-        darkness={0.55}
+        offset={0.18}
+        darkness={0.65}
         blendFunction={BlendFunction.NORMAL}
       />
     </EffectComposer>

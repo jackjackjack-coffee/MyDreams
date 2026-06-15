@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Outlines } from '@react-three/drei';
 import { scatter } from './scatter';
@@ -12,8 +13,18 @@ export function Mushrooms() {
     () => scatter({ count: 10, seed: 23, innerR: 7, outerR: 55, scaleMin: 0.7, scaleMax: 1.3 }),
     [],
   );
+  const clusterRefs = useRef<(THREE.Group | null)[]>([]);
 
   const gradientMap = useMemo(() => makeToonGradient(), []);
+
+  // Mushrooms sway slower and more subtly than flowers — they're heavier.
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    clusterRefs.current.forEach((ref, i) => {
+      if (!ref) return;
+      ref.rotation.z = Math.sin(t * 0.28 + i * 1.6) * 0.022;
+    });
+  });
 
   const stemGeom = useMemo(() => new THREE.CylinderGeometry(0.12, 0.18, 0.55, 6), []);
 
@@ -58,7 +69,13 @@ export function Mushrooms() {
   return (
     <group>
       {clusters.map((c, i) => (
-        <group key={i} position={[c.x, c.y, c.z]} rotation={[0, c.rot, 0]} scale={c.scale}>
+        <group
+          key={i}
+          ref={(el) => { clusterRefs.current[i] = el; }}
+          position={[c.x, c.y, c.z]}
+          rotation={[0, c.rot, 0]}
+          scale={c.scale}
+        >
           {[0, 1, 2, 3].map((j) => {
             const a = (j / 4) * Math.PI * 2 + (i % 5) * 0.4;
             const r = 0.4 + (j % 2) * 0.3;

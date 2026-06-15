@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Sparkles, Outlines } from '@react-three/drei';
 import { makeToonGradient } from '../toonGradient';
@@ -39,6 +40,42 @@ const BRANCHES: BranchSpec[] = [
     ],
   },
 ];
+
+// A single volumetric light cone — additive blend, gently breathing opacity.
+function LightShaft({
+  position,
+  rotation,
+  color = '#e8c279',
+  baseOpacity = 0.06,
+  phase = 0,
+}: {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  color?: string;
+  baseOpacity?: number;
+  phase?: number;
+}) {
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+  useFrame(({ clock }) => {
+    if (!matRef.current) return;
+    matRef.current.opacity = baseOpacity + Math.sin(clock.elapsedTime * 0.28 + phase) * 0.015;
+  });
+  return (
+    <mesh position={position} rotation={rotation}>
+      <coneGeometry args={[3.5, 38, 6, 1, true]} />
+      <meshBasicMaterial
+        ref={matRef}
+        color={color}
+        transparent
+        opacity={baseOpacity}
+        depthWrite={false}
+        side={THREE.DoubleSide}
+        blending={THREE.AdditiveBlending}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+}
 
 const LOWER_TRUNK_HEIGHT = 42;
 const FORK_Y = 40;
@@ -167,6 +204,11 @@ export function MotherTree({ position = [-35, 0, -55] as [number, number, number
           toneMapped={false}
         />
       </mesh>
+
+      {/* God-ray light shafts filtering through canopy gaps */}
+      <LightShaft position={[4, 62, 3]}   rotation={[0.08, 0.5,  0.06]} color="#e8c279" baseOpacity={0.055} phase={0}   />
+      <LightShaft position={[-3, 58, 4]}  rotation={[0.1,  1.6, -0.07]} color="#cf8a8a" baseOpacity={0.045} phase={1.4} />
+      <LightShaft position={[2, 65, -5]}  rotation={[0.12, 3.1,  0.05]} color="#a8c5e0" baseOpacity={0.04}  phase={2.8} />
     </group>
   );
 }
