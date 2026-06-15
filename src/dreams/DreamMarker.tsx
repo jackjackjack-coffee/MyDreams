@@ -51,6 +51,24 @@ export function DreamMarker({ dream, onSelect }: Props) {
     [],
   );
 
+  // Tall vertical beam so the dream can be spotted from across the world.
+  // Additive + cone-shaped (wide at the bloom, tapering as it rises) reads as
+  // a soft shaft of light, like a distant lantern. The bloom post-process
+  // catches it and makes it glow.
+  const beaconMat = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.12,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        toneMapped: false,
+      }),
+    [color],
+  );
+
   // Gentle breathing pulse so markers feel alive.
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
@@ -96,6 +114,11 @@ export function DreamMarker({ dream, onSelect }: Props) {
       {/* Halo */}
       <mesh ref={haloRef} material={haloMat} position={[0, stemH, 0]}>
         <sphereGeometry args={[0.42, 16, 14]} />
+      </mesh>
+
+      {/* Light beacon — base at the bloom, tapering to a point ~13 units up */}
+      <mesh material={beaconMat} position={[0, stemH + 6, 0]}>
+        <coneGeometry args={[0.55, 12, 10, 1, true]} />
       </mesh>
 
       {/* Color-matched motes */}
