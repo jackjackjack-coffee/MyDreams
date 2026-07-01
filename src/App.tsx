@@ -12,6 +12,12 @@ import { useDreams } from './dreams/store';
 import type { Dream } from './dreams/types';
 import { requestTeleport } from './world/teleport';
 import { terrainHeight } from './world/terrain/heightmap';
+import {
+  startAmbient,
+  setMuted as setAudioMuted,
+  isMuted,
+  initMuteFromStorage,
+} from './audio/ambient';
 
 const KEYS = [
   { name: 'forward', keys: ['ArrowUp', 'KeyW'] },
@@ -43,11 +49,30 @@ export default function App() {
   const [sensitivity, setSensitivity] = useState(loadSensitivity);
   const [formOpen, setFormOpen] = useState(false);
   const [selected, setSelected] = useState<Dream | null>(null);
+  const [muted, setMuted] = useState(false);
   const { dreams, loading } = useDreams();
 
   useEffect(() => {
     localStorage.setItem(SENSITIVITY_KEY, String(sensitivity));
   }, [sensitivity]);
+
+  // Sync the mute toggle with the saved preference on first load.
+  useEffect(() => {
+    initMuteFromStorage();
+    setMuted(isMuted());
+  }, []);
+
+  // The ambient soundscape can only start from a user gesture — entering the
+  // world (which locks the pointer) is that gesture.
+  useEffect(() => {
+    if (locked) startAmbient();
+  }, [locked]);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    setAudioMuted(next);
+  };
 
   // Shareable links: ?dream=<id> teleports you to that dream and opens it.
   // Runs once, after the initial fetch has had a chance to deliver the dream.
@@ -151,6 +176,16 @@ export default function App() {
           a place to leave a wish for a stranger
         </p>
       </div>
+
+      {/* Sound toggle — top-left so it never overlaps the settings gear. */}
+      <button
+        type="button"
+        onClick={toggleMute}
+        title={muted ? 'Unmute ambient sound' : 'Mute ambient sound'}
+        className="pointer-events-auto absolute left-4 top-4 rounded-full bg-black/40 px-3 py-2 text-sm text-white/80 ring-1 ring-white/10 backdrop-blur hover:bg-black/60"
+      >
+        {muted ? '🔇' : '🔊'}
+      </button>
 
       <Settings
         open={settingsOpen}

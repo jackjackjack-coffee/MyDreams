@@ -10,7 +10,7 @@ const OUTLINE = '#1a1530';
 // more deliberate than dodecahedron blobs.
 export function StandingStones() {
   const clusters = useMemo(
-    () => scatter({ count: 3, seed: 47, innerR: 18, outerR: 55, scaleMin: 1.2, scaleMax: 2.0 }),
+    () => scatter({ count: 5, seed: 47, innerR: 18, outerR: 62, scaleMin: 1.2, scaleMax: 2.0 }),
     [],
   );
 
