@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Outlines } from '@react-three/drei';
 import { scatter } from './scatter';
 import { makeToonGradient } from '../toonGradient';
+import { makeRockTexture } from '../textures';
 
 const OUTLINE = '#1a1530';
 
@@ -19,14 +20,19 @@ export function StandingStones() {
   // Pentagonal prism — 5 sides, tall, slight taper toward top.
   const stoneGeom = useMemo(() => new THREE.CylinderGeometry(0.5, 0.7, 3.5, 5), []);
 
-  const stoneMat = useMemo(
-    () =>
-      new THREE.MeshToonMaterial({
-        color: '#5b6680',
-        gradientMap,
-      }),
-    [gradientMap],
-  );
+  const stoneMat = useMemo(() => {
+    // Same mottled canvas doubles as color map and bump so the twilight
+    // light catches faint relief on the faces.
+    const rock = makeRockTexture(1.4, 1.8);
+    const mat = new THREE.MeshToonMaterial({
+      color: '#5b6680',
+      gradientMap,
+      map: rock,
+      bumpMap: rock,
+      bumpScale: 0.6,
+    });
+    return mat;
+  }, [gradientMap]);
 
   return (
     <group>

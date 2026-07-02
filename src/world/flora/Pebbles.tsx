@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { scatter } from './scatter';
 import { makeToonGradient } from '../toonGradient';
+import { makeRockTexture } from '../textures';
 
 const COUNT = 120;
 
@@ -19,6 +20,7 @@ export function Pebbles() {
       new THREE.MeshToonMaterial({
         color: '#6b7284',
         gradientMap,
+        map: makeRockTexture(2, 2),
       }),
     [gradientMap],
   );
