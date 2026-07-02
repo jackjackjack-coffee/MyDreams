@@ -24,13 +24,28 @@ type Props = {
 
 export function DreamPopup({ dream, onClose }: Props) {
   const [reported, setReported] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   if (!dream) return null;
+
+  // Optimistic rows haven't hit the database yet — no real id to report/link.
+  const isPersisted = !dream.id.startsWith('optimistic-');
 
   const handleReport = async () => {
     if (reported) return;
     setReported(true);
     await reportDream(dream.id);
+  };
+
+  const handleCopyLink = async () => {
+    const url = `${location.origin}${location.pathname}?dream=${dream.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard blocked (permissions / non-HTTPS) — nothing useful to do.
+    }
   };
 
   return (
@@ -67,14 +82,27 @@ export function DreamPopup({ dream, onClose }: Props) {
         )}
 
         <div className="mt-5 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={handleReport}
-            disabled={reported}
-            className="text-xs text-white/40 hover:text-rose-300 disabled:text-white/30"
-          >
-            {reported ? 'Reported — thank you' : 'Report'}
-          </button>
+          {isPersisted ? (
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={handleReport}
+                disabled={reported}
+                className="text-xs text-white/40 hover:text-rose-300 disabled:text-white/30"
+              >
+                {reported ? 'Reported — thank you' : 'Report'}
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="text-xs text-white/40 hover:text-cyan-300"
+              >
+                {copied ? 'Link copied!' : 'Copy link'}
+              </button>
+            </div>
+          ) : (
+            <span />
+          )}
           <button
             type="button"
             onClick={onClose}
