@@ -4,7 +4,7 @@ import { Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { scatter } from './scatter';
 
-const COUNT = 36;
+const COUNT = 55;
 
 // Tall stems with bioluminescent bloom-orbs. One shared Sparkles instance covers
 // all flowers (per-flower particle systems and point lights were the biggest

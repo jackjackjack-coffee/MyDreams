@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { KeyboardControls, PointerLockControls } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
@@ -8,7 +8,16 @@ import { Postprocess } from './world/effects/Postprocess';
 import { Settings } from './ui/Settings';
 import { DreamForm } from './dreams/DreamForm';
 import { DreamPopup } from './dreams/DreamPopup';
+import { useDreams } from './dreams/store';
 import type { Dream } from './dreams/types';
+import { requestTeleport } from './world/teleport';
+import { terrainHeight } from './world/terrain/heightmap';
+import {
+  startAmbient,
+  setMuted as setAudioMuted,
+  isMuted,
+  initMuteFromStorage,
+} from './audio/ambient';
 
 const KEYS = [
   { name: 'forward', keys: ['ArrowUp', 'KeyW'] },
@@ -19,6 +28,15 @@ const KEYS = [
 ];
 
 const SENSITIVITY_KEY = 'mydreams.mouseSensitivity';
+
+// Drop the player a couple of steps away from a dream so its marker is right
+// in front of them.
+function teleportToDream(d: Dream) {
+  const angle = Math.random() * Math.PI * 2;
+  const x = d.x + Math.cos(angle) * 2.5;
+  const z = d.z + Math.sin(angle) * 2.5;
+  requestTeleport(x, terrainHeight(x, z) + 1.6, z);
+}
 
 function loadSensitivity(): number {
   const v = parseFloat(localStorage.getItem(SENSITIVITY_KEY) ?? '1');
@@ -31,10 +49,57 @@ export default function App() {
   const [sensitivity, setSensitivity] = useState(loadSensitivity);
   const [formOpen, setFormOpen] = useState(false);
   const [selected, setSelected] = useState<Dream | null>(null);
+  const [muted, setMuted] = useState(false);
+  const { dreams, loading } = useDreams();
 
   useEffect(() => {
     localStorage.setItem(SENSITIVITY_KEY, String(sensitivity));
   }, [sensitivity]);
+
+  // Sync the mute toggle with the saved preference on first load.
+  useEffect(() => {
+    initMuteFromStorage();
+    setMuted(isMuted());
+  }, []);
+
+  // The ambient soundscape can only start from a user gesture — entering the
+  // world (which locks the pointer) is that gesture.
+  useEffect(() => {
+    if (locked) startAmbient();
+  }, [locked]);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    setAudioMuted(next);
+  };
+
+  // Shareable links: ?dream=<id> teleports you to that dream and opens it.
+  // Runs once, after the initial fetch has had a chance to deliver the dream.
+  const deepLinkDone = useRef(false);
+  useEffect(() => {
+    if (deepLinkDone.current || dreams.length === 0) return;
+    const id = new URLSearchParams(window.location.search).get('dream');
+    if (!id) {
+      deepLinkDone.current = true;
+      return;
+    }
+    const dream = dreams.find((d) => d.id === id);
+    if (!dream) {
+      // Gone (deleted or hidden) — give up once loading settles.
+      if (!loading) deepLinkDone.current = true;
+      return;
+    }
+    deepLinkDone.current = true;
+    teleportToDream(dream);
+    setSelected(dream);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, [dreams, loading]);
+
+  const visitRandomDream = () => {
+    if (dreams.length === 0) return;
+    teleportToDream(dreams[Math.floor(Math.random() * dreams.length)]);
+  };
 
   // Press E to leave a dream. Only while locked (in-game), and only when no
   // other modal is already open.
@@ -112,6 +177,16 @@ export default function App() {
         </p>
       </div>
 
+      {/* Sound toggle — top-left so it never overlaps the settings gear. */}
+      <button
+        type="button"
+        onClick={toggleMute}
+        title={muted ? 'Unmute ambient sound' : 'Mute ambient sound'}
+        className="pointer-events-auto absolute left-4 top-4 rounded-full bg-black/40 px-3 py-2 text-sm text-white/80 ring-1 ring-white/10 backdrop-blur hover:bg-black/60"
+      >
+        {muted ? '🔇' : '🔊'}
+      </button>
+
       <Settings
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
@@ -121,7 +196,11 @@ export default function App() {
       />
 
       <DreamForm open={formOpen} onClose={() => setFormOpen(false)} />
-      <DreamPopup dream={selected} onClose={() => setSelected(null)} />
+      <DreamPopup
+        key={selected?.id ?? 'none'}
+        dream={selected}
+        onClose={() => setSelected(null)}
+      />
 
       {!locked && !modalOpen && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -130,6 +209,23 @@ export default function App() {
             <p className="mt-1 text-xs text-white/60">
               WASD to walk · mouse to look · Space to jump · E to leave a dream · Esc to release
             </p>
+            <p className="mt-1 text-xs text-white/60">
+              The glowing flowers hold strangers&apos; dreams — walk up and click one.
+            </p>
+            {dreams.length > 0 && (
+              <>
+                <p className="mt-3 text-xs text-white/40">
+                  {dreams.length} dream{dreams.length === 1 ? '' : 's'} glowing in the garden
+                </p>
+                <button
+                  type="button"
+                  onClick={visitRandomDream}
+                  className="pointer-events-auto mt-2 rounded-md bg-white/10 px-4 py-1.5 text-xs text-white/80 ring-1 ring-white/10 hover:bg-white/20"
+                >
+                  ✦ Drift to a random dream
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

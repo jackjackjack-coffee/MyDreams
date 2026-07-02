@@ -63,19 +63,26 @@ Don't expect localhost to work when Claude is running on the web. Always check t
 8. ✅ Place-a-dream form — text + image tabs working (image picker with drag-drop, preview, size cap)
 9. ✅ Image uploads — Supabase Storage `dream-media` bucket, 5 MB cap, per-user folder RLS, public-read
 10. ✅ Video uploads — same `dream-media` bucket, 50 MB cap, MP4/WebM/MOV, picker + drag-drop, caption, popup player
-11. 🟡 Dream popup viewer — text + image + video all working; step is effectively done
-12. 🟡 Safety pass — text + image: 500-char cap, profanity filter, Report button, 5 MB image cap. Still pending: rate limit, moderation queue.
-13. ⏳ Polish + deploy to Vercel — Vercel preview auto-deploys already working
+11. ✅ Dream popup viewer — text + image + video, Copy-link button, per-dream remount (`key`) fix
+12. ✅ Safety pass — 500-char cap, profanity filter, Report button, size caps, **DB-level rate limits** (5 dreams/hr + 5 uploads/hr per user, enforced in RLS — no Edge Function needed), one-report-per-user-per-dream, **auto-hide at 3 reports** via trigger, `moderation_queue` view reviewed from the Supabase dashboard (SETUP.md §9)
+13. ⏳ Polish + deploy to Vercel — Vercel preview auto-deploys already working (deploy step still pending)
+14. ✅ **Polish phase 1** — procedural ambient audio (`src/audio/ambient.ts`: wind/drone/chimes/footsteps, all WebAudio, no files; mute button top-left), world density (`src/world/flora/Grass.tsx` ~9k instanced wind-swept blades in one draw call, `Pebbles.tsx` 120 rocks, denser flowers/mushrooms/crystals/stones), embodied movement (head-bob + footsteps in `Player.tsx`)
+15. ✅ **Polish phase 2** — cinematic post-processing (`src/world/effects/Postprocess.tsx`): tamed Bloom (threshold 0.34/intensity 1.35), cool desaturated grade, film-grain `Noise` (paper feel), softer vignette. Deliberately NO depth-of-field/tilt-shift (nausea + perf on a first-person camera; fog already handles far-haze).
+16. ✅ **Polish phase 3 — procedural textures** (`src/world/textures.ts`, all canvas-2D/DataTexture, no asset files): painterly mottle on the terrain (tiled near-white map multiplying the vertex colors), bark streaks + knots on the Mother Tree trunk/branches (one shared material), lichen-mottled rock on standing stones (map + bump) and pebbles, and animated water ripples on the lake (procedural normal map scrolled each frame, doubling as reflection `distortionMap`). All textures near-white so they modulate the locked palette instead of repainting it; seamless tiling via wrapped stamps / integer-frequency waves.
 
-**Branch / PR state:**
-- Active branch: `claude/fervent-meitner-AJEqQ`
-- Open draft PR: #3 — covers step 10 (video uploads), built on top of PR #2 (steps 4–9)
-- **User must re-run `supabase/schema.sql`** in their Supabase SQL editor if not already done — re-runnable, adds `media_url` column + storage bucket + policies, no data loss.
+**Also in place:** shareable deep links (`?dream=<id>` teleports to + opens that dream), "Drift to a random dream" button + dream count on the start overlay, `supabase/seed.sql` with 20 starter dreams (SETUP.md §8). Also fixed: the remote-HDR `<Environment preset>` that crashed the whole canvas to black if the CDN failed — now an in-engine `Lightformer` environment (`World.tsx`), no network dependency.
+
+**Branch / PR state (as of this handoff):**
+- Active branch: **`claude/mydreams-phase-3-textures-7xfbhk`** (continues from `claude/fervent-meitner-AJEqQ` / PR #9 history). Contains: safety pass + sharing (step 12), polish phases 1–3.
+- Headless-verification gotcha discovered this session: under the container's software renderer the physics steps are so large the player capsule falls straight through the terrain, so first-person screenshots show only sky. Workaround for screenshots: temporarily set the Player RigidBody to `type="fixed"` (revert before committing). Does NOT happen on real machines at normal frame rates.
+- Build verified: `npx tsc -b` clean, `npm run build` succeeds. Headless render shows no shader/runtime errors (exact exposure/colour only judgeable on the real GPU / Vercel preview — the cloud container's software renderer blows out bright surfaces, so don't trust its brightness).
+- **User still must, in Supabase:** (1) re-run `supabase/schema.sql` (re-runnable, adds `hidden` column + rate-limit funcs/policies + auto-hide trigger + moderation view; no data loss); (2) optionally run `supabase/seed.sql` once; (3) enable Anonymous Sign-In (Auth → Providers); (4) add `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` to Vercel env vars.
+
+**Decision locked this session:** Phase 3 = **procedural textures only** — surface detail (bark/ground/rock/water) generated in code via noise/shaders. The "code-generated only, no asset files" rule STAYS (user chose not to relax it for hand-made CC0 textures or 3D models). Revisit models/textures-as-files later only if the user asks.
 
 **Next-PR backlog:**
-- Rate limiting (Edge Function) — step 12 remaining work
-- Moderation queue UI for reported dreams — step 12 remaining work
-- Polish + deploy to Vercel — step 13
+- Performance pass on a weak machine (grass count, shadow map size, bloom kernel are the knobs)
+- Deploy to Vercel — step 13
 
 ---
 
@@ -220,17 +227,21 @@ src/world/
 
 ## Immediate next action
 
-Start **Step 4: Decorate the world with landmarks** in the locked Luma watercolor aesthetic.
+**Polish phase 3 — procedural textures (stays 100% code-generated; no asset files).** User picked this over hand-made CC0 textures/models, so the "everything is code" rule holds.
 
-Suggested order within step 4:
-1. **Sky overhaul first** (gradient dome + moons + aurora) — biggest visual impact, no physics dependency
-2. **Terrain replacement** (rolling hills instead of flat plane) — affects walking, do early so Player still works
-3. **Fog + bloom postprocess** — sets the mood instantly
-4. **Mother Tree** in the distance as the hero landmark
-5. **Floating islands + far mountain light**
-6. **Foreground flora:** flowers, mushrooms, standing stones, crystals, bioluminescent grass sparkle
-7. **Watercolor post-process** as the final polish
+Goal: give surfaces a hand-painted tooth so they stop reading as flat primitives, using code-drawn detail only (canvas-2D textures, `DataTexture`, or noise in shaders via `onBeforeCompile`). Highest-value targets, in order:
+1. **Ground/terrain** — a subtle procedural variation (mottled sage-teal, faint painterly speckle) instead of the current flat vertex-colour toon. Biggest area on screen.
+2. **Mother Tree trunk + branches** — procedural bark stripes/noise so the hero landmark isn't smooth plastic.
+3. **Standing stones + pebbles** — procedural rough/mottled rock.
+4. **Water (Lake)** — animated ripple/normal detail (already reflective; add moving normals or caustic-ish shimmer).
+5. Optional: gentle procedural normal/bump so twilight lighting catches surface detail.
 
-After step 4 is in: have the user walk around and react. Tune toward "softer/dreamier" or "sharper/more defined" based on what they say. Then move to step 5 (first dream marker).
+Keep it CHEAP (weak-machine target) and keep the locked palette (sage-teal grass, blue-violet shadows, gold/cyan/magenta highlights). After each surface, have the user check the **Vercel preview** (the cloud container's software renderer blows out brightness — don't judge look locally).
 
-Dev server should still be runnable via `npm run dev`. If a previous background instance is gone, just relaunch it.
+Watch-outs for the next session:
+- Container is ephemeral: `npm install` may be needed; `node_modules` and un-pushed work do not survive restarts. Everything real is on branch `claude/fervent-meitner-AJEqQ` / PR #9.
+- To screenshot-verify headless: Playwright is global at `/opt/node22/lib/node_modules/playwright`, Chromium at `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`; launch with `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`. Drive the FP camera by dispatching synthetic `mousemove` with `movementX/Y` after clicking to lock (negative movementY = look down).
+- Type-check after every change: `npx tsc -b`. Then `npm run build`.
+- Don't commit/push without asking; end commit messages with the Co-Authored-By / session trailers.
+
+Dev server: `npm run dev`. If a previous background instance is gone, just relaunch it.

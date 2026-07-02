@@ -10,7 +10,7 @@ const OUTLINE = '#1a1530';
 // Crystalline pink-magenta mushrooms in clusters — dome caps with stem inset.
 export function Mushrooms() {
   const clusters = useMemo(
-    () => scatter({ count: 10, seed: 23, innerR: 7, outerR: 55, scaleMin: 0.7, scaleMax: 1.3 }),
+    () => scatter({ count: 16, seed: 23, innerR: 7, outerR: 55, scaleMin: 0.7, scaleMax: 1.3 }),
     [],
   );
   const clusterRefs = useRef<(THREE.Group | null)[]>([]);

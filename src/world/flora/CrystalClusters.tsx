@@ -5,7 +5,7 @@ import { scatter } from './scatter';
 // Pink crystal clusters as occasional accents.
 export function CrystalClusters() {
   const clusters = useMemo(
-    () => scatter({ count: 8, seed: 71, innerR: 10, outerR: 55, scaleMin: 0.8, scaleMax: 1.5 }),
+    () => scatter({ count: 14, seed: 71, innerR: 10, outerR: 55, scaleMin: 0.8, scaleMax: 1.5 }),
     [],
   );
 

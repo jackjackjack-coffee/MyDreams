@@ -3,12 +3,16 @@ import * as THREE from 'three';
 import { RigidBody } from '@react-three/rapier';
 import { terrainHeight } from './heightmap';
 import { makeToonGradient } from '../toonGradient';
+import { makeGroundTexture } from '../textures';
 
 const SIZE = 240;
 const SEGMENTS = 160;
 
 export function Terrain() {
   const gradientMap = useMemo(() => makeToonGradient(), []);
+  // Painterly mottle tiled across the ground; near-white, so it only
+  // modulates the vertex colors rather than repainting them.
+  const groundMap = useMemo(() => makeGroundTexture(20), []);
   const geom = useMemo(() => {
     const g = new THREE.PlaneGeometry(SIZE, SIZE, SEGMENTS, SEGMENTS);
     g.rotateX(-Math.PI / 2);
@@ -41,7 +45,7 @@ export function Terrain() {
   return (
     <RigidBody type="fixed" colliders="trimesh" friction={0.9}>
       <mesh geometry={geom} receiveShadow>
-        <meshToonMaterial vertexColors gradientMap={gradientMap} />
+        <meshToonMaterial vertexColors gradientMap={gradientMap} map={groundMap} />
       </mesh>
     </RigidBody>
   );

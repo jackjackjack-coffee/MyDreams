@@ -1,10 +1,24 @@
+import { useMemo } from 'react';
+import * as THREE from 'three';
+import { useFrame } from '@react-three/fiber';
 import { MeshReflectorMaterial, Sparkles } from '@react-three/drei';
+import { makeWaterNormalTexture } from '../textures';
 
 // A shallow reflective pool between spawn and the Mother Tree.
 // The flat plane sits slightly below ground level — where the terrain
 // dips lower than the lake surface you see water; where it rises above,
 // the terrain hides it, giving a natural pond-in-a-hollow feel.
 export function Lake() {
+  // Procedural ripple normals: scrolling the texture offset makes the
+  // twilight highlights crawl across the surface like slow-moving water.
+  // The same texture feeds `distortionMap` so the mirror image wavers.
+  const ripples = useMemo(() => makeWaterNormalTexture(), []);
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    ripples.offset.set(t * 0.012, t * 0.019);
+  });
+
   return (
     <group position={[-22, -0.55, -38]}>
       {/* Water surface — real-time reflection of the sky + scene */}
@@ -22,6 +36,10 @@ export function Lake() {
           maxDepthThreshold={1.5}
           color="#14213d"
           metalness={0.75}
+          normalMap={ripples}
+          normalScale={new THREE.Vector2(0.35, 0.35)}
+          distortionMap={ripples}
+          distortion={0.22}
         />
       </mesh>
 

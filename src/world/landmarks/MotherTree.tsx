@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Sparkles, Outlines } from '@react-three/drei';
 import { makeToonGradient } from '../toonGradient';
+import { makeBarkTexture } from '../textures';
 
 const TRUNK_COLOR = '#3d4a66';
 const OUTLINE = '#1a1530';
@@ -99,6 +100,17 @@ function branchTip(yaw: number, tilt: number, length: number, originY: number) {
 export function MotherTree({ position = [-35, 0, -55] as [number, number, number] }) {
   const gradientMap = useMemo(() => makeToonGradient(), []);
 
+  // One bark-striped material shared by the trunk and every branch.
+  const barkMat = useMemo(
+    () =>
+      new THREE.MeshToonMaterial({
+        color: TRUNK_COLOR,
+        gradientMap,
+        map: makeBarkTexture(3, 4),
+      }),
+    [gradientMap],
+  );
+
   // One material per opacity level for canopy — cheaper than cloning per mesh.
   const canopyMaterials = useMemo(
     () =>
@@ -130,9 +142,8 @@ export function MotherTree({ position = [-35, 0, -55] as [number, number, number
   return (
     <group position={position}>
       {/* Lower trunk */}
-      <mesh position={[0, LOWER_TRUNK_HEIGHT / 2, 0]} castShadow>
+      <mesh position={[0, LOWER_TRUNK_HEIGHT / 2, 0]} material={barkMat} castShadow>
         <cylinderGeometry args={[2.8, 4.5, LOWER_TRUNK_HEIGHT, 10]} />
-        <meshToonMaterial color={TRUNK_COLOR} gradientMap={gradientMap} />
         <Outlines thickness={0.03} color={OUTLINE} />
       </mesh>
 
@@ -140,9 +151,8 @@ export function MotherTree({ position = [-35, 0, -55] as [number, number, number
       {BRANCHES.map((b, i) => (
         <group key={i} position={[0, FORK_Y, 0]} rotation={[0, b.yaw, b.tilt]}>
           {/* Main branch: cylinder positioned at its midpoint along local Y */}
-          <mesh position={[0, b.length / 2, 0]} castShadow>
+          <mesh position={[0, b.length / 2, 0]} material={barkMat} castShadow>
             <cylinderGeometry args={[b.rTip, b.rBase, b.length, 8]} />
-            <meshToonMaterial color={TRUNK_COLOR} gradientMap={gradientMap} />
             <Outlines thickness={0.025} color={OUTLINE} />
           </mesh>
 
@@ -153,9 +163,8 @@ export function MotherTree({ position = [-35, 0, -55] as [number, number, number
               position={[0, b.length * s.along, 0]}
               rotation={[0, s.yawOff, s.tiltOff]}
             >
-              <mesh position={[0, s.length / 2, 0]} castShadow>
+              <mesh position={[0, s.length / 2, 0]} material={barkMat} castShadow>
                 <cylinderGeometry args={[s.rTip, s.rBase, s.length, 6]} />
-                <meshToonMaterial color={TRUNK_COLOR} gradientMap={gradientMap} />
                 <Outlines thickness={0.02} color={OUTLINE} />
               </mesh>
             </group>
